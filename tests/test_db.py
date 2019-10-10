@@ -5,7 +5,7 @@ import pytest
 from pymongo import MongoClient
 from pymongo.database import Database
 
-from src.core.db import MongoHandler
+from src.db import MongoHandler
 
 
 @pytest.fixture(scope='module')
