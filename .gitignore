@@ -12,4 +12,3 @@ secrets.json
 # package setup
 build/
 *.egg-info/
-dist/
