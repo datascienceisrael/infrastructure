@@ -9,3 +9,6 @@
 **/__pycache__
 #cardentials
 secrets.json
+# package setup
+build/
+*.egg-info/
