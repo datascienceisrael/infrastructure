@@ -1,0 +1,11 @@
+#vscode
+.vscode
+#pytest
+**/.pytest_cache
+.coverage
+**/htmlcov
+# python
+*.pyc
+**/__pycache__
+#cardentials
+secrets.json
