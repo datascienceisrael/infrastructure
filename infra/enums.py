@@ -1,7 +1,8 @@
 import sys
-python_version = str(sys.version_info[0]) + str(sys.version_info[1])
+python_version = ".".join([str(sys.version_info[0]),
+                           str(sys.version_info[1])])
 
-if python_version >= '3.6':
+if float(python_version) >= 3.6:
     from enum import Enum, auto
 else:
     from aenum import Enum, auto
