@@ -1,30 +1,27 @@
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import pytest
 from pymongo import MongoClient
 from pymongo.database import Database
+from pymongo.errors import WriteError
 
 from infra.db import MongoHandler
 
 
 @pytest.fixture(scope='module')
-def validator_schemas():
+def scheme_and_data():
+    path = 'tests/mongo_schemes/valid_scheme/scheme.json'
+    with open(path, 'rb') as jf:
+        valid_scheme = json.load(jf)
+    path = 'tests/mongo_schemes/valid_scheme/valid_data/valid_sample.json'
+    with open(path, 'rb') as jf:
+        valid_data = json.load(jf)
+    path = 'tests/mongo_schemes/valid_scheme/invalid_data/invalid_year.json'
+    with open(path, 'rb') as jf:
+        invalid_data = json.load(jf)
 
-    valid_schemas = []
-    invalid_schemas = []
-
-    with open('tests/mongo_schemas/valid/sample.json', 'rb') as jf:
-        valid_schema = json.load(jf)
-    with open('tests/mongo_schemas/invalid/sample1.json', 'rb') as jf:
-        first_invalid_schema = json.load(jf)
-    with open('tests/mongo_schemas/invalid/sample2.json') as jf:
-        second_invalid_schema = json.load(jf)
-
-    valid_schemas.append(valid_schema)
-    invalid_schemas.extend(first_invalid_schema, second_invalid_schema)
-
-    return valid_schema, invalid_schemas
+    return valid_scheme, valid_data, invalid_data
 
 
 @pytest.fixture(scope='module')
@@ -35,12 +32,22 @@ def secrets():
     return secrets
 
 
+@pytest.fixture(scope='function')
+def temp_coll_name(evo_db: Database):
+    coll_name = 'tmp'
+    evo_db.create_collection(coll_name)
+
+    yield coll_name
+
+    evo_db.drop_collection(coll_name)
+
+
 @pytest.fixture(scope='module')
 def conn_string(secrets):
     user_name = secrets['db']['user_name']
     pwd = secrets['db']['password']
-    conn_string = f'mongodb+srv://{user_name}:{pwd}@evolve-omg0q.gcp.mongodb'
-    f'.net/test?retryWrites=true&w=majority'
+    conn_string = f'mongodb+srv://{user_name}:{pwd}@evolve-omg0q.gcp.mongodb.'\
+        f'net/test?retryWrites=true&w=majority'
 
     return conn_string
 
@@ -56,8 +63,8 @@ def app_name():
 
 
 @pytest.fixture(scope='module')
-def mongo_handler(conn_string, db_name, app_name):
-    handler = MongoHandler(conn_string, db_name, app_name)
+def mongo_handler(conn_string, db_name, app_name, logger_name):
+    handler = MongoHandler(conn_string, db_name, app_name, logger_name)
     yield handler
     del handler
 
@@ -83,33 +90,34 @@ def test_create_collection(mongo_handler: MongoHandler, evo_db: Database):
     evo_db.drop_collection(new_col_name)
 
 
-def test_delete_collection(mongo_handler: MongoHandler, evo_db: Database):
-    col_name = 'tmp'
-    evo_db.create_collection(col_name)
-    result = mongo_handler.delete_collection(col_name)
+def test_delete_collection(mongo_handler: MongoHandler,
+                           temp_coll_name: str,
+                           evo_db: Database):
+    result = mongo_handler.delete_collection(temp_coll_name)
     assert result
 
-    result = mongo_handler.delete_collection(col_name)
+    result = mongo_handler.delete_collection(temp_coll_name)
     assert not result
 
 
 def test_update_collection_schema(mongo_handler: MongoHandler,
-                                  validator_schemas: Tuple[List[
-                                      Dict[str, Any]]]):
+                                  evo_db: Database,
+                                  temp_coll_name: str,
+                                  scheme_and_data: Tuple[Dict[str, Any]]):
 
-    col_name = 'tmp'
-    evo_db.create_collection(col_name)
-    valid_schemas, invalid_schemas = validator_schemas
+    valid_scheme, valid_data, invalid_data = scheme_and_data
+    collection = evo_db.get_collection(temp_coll_name)
 
-    for valid_schema in valid_schemas:
-        result = mongo_handler.update_collection_schema(col_name, valid_schema)
-        assert result
+    result = mongo_handler.update_collection_schema(
+        temp_coll_name, valid_scheme)
+    assert result
 
-    for invalid_schema in invalid_schemas:
-        result = mongo_handler.update_collection_schema(
-            col_name, invalid_schema)
-        assert not result
+    with pytest.raises(WriteError):
+        collection.insert_one(invalid_data)
+
+    doc_id = collection.insert_one(valid_data)
+    assert doc_id is not None
 
     col_name = "imaginary"
-    result = mongo_handler.update_collection_schema(col_name, valid_schema[0])
+    result = mongo_handler.update_collection_schema(col_name, valid_scheme)
     assert not result

@@ -5,7 +5,7 @@ from pymongo.collection import Collection
 from pymongo.errors import (CollectionInvalid, ConnectionFailure,
                             OperationFailure, ServerSelectionTimeoutError)
 
-from configuration import config
+from infra.enums import LogSeverities
 from infra.logging import gcl_log_event
 
 
@@ -14,12 +14,15 @@ class MongoHandler():
 
     """
 
-    def __init__(self, conn_string: str, db_name: str, app_name: str = None):
+    def __init__(self, conn_string: str,
+                 db_name: str,
+                 logger_name: str,
+                 app_name: str = None):
         self._client = MongoClient(conn_string, appname=app_name)
-        self._app_name = app_name
         self._db = self._client.get_database(db_name)
         self._curr_db_name = db_name
-        self._logger_name = config.LOGGER_NAME
+        self._app_name = app_name
+        self._logger_name = logger_name
 
     def __del__(self):
         self._client.close()
@@ -57,7 +60,7 @@ class MongoHandler():
         gcl_log_event(logger_name=self._logger_name,
                       event_name='Collection Changed',
                       message='A new collection was requested.',
-                      severity='DEBUG',
+                      severity=LogSeverities.DEBUG,
                       collection_name=col_name,
                       class_name='MongoHandler',
                       func_name='get_collection',
@@ -91,7 +94,7 @@ class MongoHandler():
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Error',
                           message=str(cie),
-                          severity='ERROR',
+                          severity=LogSeverities.ERROR,
                           class_name='MongoHandler',
                           func_name='create_collection',
                           event_group='Mongo')
@@ -119,7 +122,7 @@ class MongoHandler():
                 gcl_log_event(logger_name=self._logger_name,
                               event_name='Collection Error',
                               message=result['errmsg'],
-                              severity='WARNING',
+                              severity=LogSeverities.WARNING,
                               collection_name=col_name,
                               class_name='MongoHandler',
                               func_name='delete_collection',
@@ -169,7 +172,7 @@ class MongoHandler():
                 gcl_log_event(logger_name=self._logger_name,
                               event_name='Collection Error',
                               message=result['errmsg'],
-                              severity='WARNING',
+                              severity=LogSeverities.WARNING,
                               collection_name=col_name,
                               class_name='MongoHandler',
                               func_name='update_collection_schema',
@@ -197,8 +200,8 @@ class MongoHandler():
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Error',
                           message=msg,
-                          description=ope,
-                          severity='ERROR',
+                          description=str(ope),
+                          severity=LogSeverities.ERROR,
                           collection_name=col_name,
                           class_name='MongoHandler',
                           func_name='update_collection_schema',
