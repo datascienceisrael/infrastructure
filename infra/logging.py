@@ -1,9 +1,8 @@
 import google.cloud.logging as gcl
 
-from configuration import config
 from infra.enums import LogSeverities
 
-__stackdriver_client = gcl.Client()
+_stackdriver_client = gcl.Client()
 
 
 def gcl_delete_logs(logger_name: str):
@@ -12,12 +11,14 @@ def gcl_delete_logs(logger_name: str):
     Args:
         logger_name (str): The requested logger.
     """
-    logger = __stackdriver_client.logger(logger_name)
+    logger = _stackdriver_client.logger(logger_name)
     logger.delete()
 
 
 def gcl_log_event(logger_name: str, event_name: str,  message: str,
-                  description: str = None, severity: LogSeverities = LogSeverities.INFO, **kwargs):
+                  description: str = None,
+                  severity: LogSeverities = LogSeverities.INFO,
+                  **kwargs):
     """Log an event to Google Cloud Logging (Stackdrive).
 
     Args:
@@ -28,7 +29,7 @@ def gcl_log_event(logger_name: str, event_name: str,  message: str,
         severity (LogSeverities): The severity of the event.
         **kwargs: Any other metadata on the event.
     """
-    logger = __stackdriver_client.logger(logger_name)
+    logger = _stackdriver_client.logger(logger_name)
 
     info = {'message': message, 'name': event_name, 'description': description}
     info.update(kwargs)
