@@ -1,7 +1,7 @@
 import google.cloud.logging as gcl
 
 from configuration import config
-from src.enums import LogSeverities
+from infra.enums import LogSeverities
 
 __stackdriver_client = gcl.Client()
 
