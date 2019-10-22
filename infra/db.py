@@ -19,9 +19,9 @@ class MongoHandler():
                  logger_name: str,
                  app_name: str = None):
         self._client = MongoClient(conn_string, appname=app_name)
-        self._app_name = app_name
         self._db = self._client.get_database(db_name)
         self._curr_db_name = db_name
+        self._app_name = app_name
         self._logger_name = logger_name
 
     def __del__(self):
