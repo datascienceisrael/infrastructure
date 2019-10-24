@@ -13,6 +13,7 @@ flake8 = "*"
 pymongo = "*"
 google-cloud-logging = "*"
 aenum = "*"
+google-cloud-storage = "*"
 
 [requires]
 python_version = "3.7"
