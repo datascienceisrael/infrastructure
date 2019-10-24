@@ -1,6 +1,10 @@
 import json
 import os
 
+#region
+LOGGER_NAME = 'infra'
+#endregion
+
 # region Credentials
 with open(os.path.join(os.getcwd(), 'secrets.json'), 'rb') as sec_file:
     secrets = json.load(sec_file)
