@@ -1,0 +1,12 @@
+site_name: DSG Infrastructure
+site_description: Documentation for the Infrastructure package.
+site_author: DSG Team
+
+nav:
+    - Home: index.md
+    - Reference: 
+        - Logging: reference/logging.md
+        - DB Handlers: reference/db-handlers.md
+    - Atricles: 
+        - Getting Started: articles/getting-started.md
+    - About: about.md
