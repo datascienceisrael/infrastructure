@@ -30,7 +30,7 @@ class StorageClasses(enum.Enum):
     COLDLINE = enum.auto()
 
 
-class Environments(enum.Enum):
+class Environments(enum.Flag):
     """
     Represents the possible environments of the application.
     """
@@ -38,3 +38,4 @@ class Environments(enum.Enum):
     DEV = enum.auto()
     STAGING = enum.auto()
     PROD = enum.auto()
+    INFRA = TEST | DEV | STAGING | PROD
