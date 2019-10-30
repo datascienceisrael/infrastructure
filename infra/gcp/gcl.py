@@ -1,3 +1,6 @@
+"""
+This module contains methods for using google stackdriver logging service.
+"""
 import google.cloud.logging as gcl
 
 from infra.enums import LogSeverities, Environments

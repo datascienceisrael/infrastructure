@@ -1,3 +1,8 @@
+"""
+This modules contains classes and methods for using various databases.
+Currently supported:
+*  MongoDB
+"""
 from typing import Any, Dict
 
 from pymongo import MongoClient
