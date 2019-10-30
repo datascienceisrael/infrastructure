@@ -1,3 +1,5 @@
+import socket
+from os import path
 from typing import Any, Dict
 
 from google.cloud import storage
@@ -30,7 +32,7 @@ def create_bucket(bucket_name: str, app_name: str,
          bool: True if the bucket was created, false otherwise.
      """
     unique_name = app_name + '_' + bucket_name
-    metadata = {
+    log_metadata = {
         'bucketName': bucket_name,
         'funcName': 'create_bucket',
         'eventGroup': 'Google Cloud Storage'
@@ -44,7 +46,7 @@ def create_bucket(bucket_name: str, app_name: str,
                       event_name='Bucket Created',
                       message='A new bucket was created',
                       environment=Environments.INFRA,
-                      **metadata)
+                      **log_metadata)
 
         return True
     except Conflict as ce:
@@ -53,13 +55,13 @@ def create_bucket(bucket_name: str, app_name: str,
                       message=str(ce),
                       environment=Environments.INFRA,
                       severity=LogSeverities.WARNING,
-                      **metadata)
+                      **log_metadata)
 
         return False
 
 
 def save_artifact(bucket_name: str,
-                  blob_name: str,
+                  object_name: str,
                   file_path: str,
                   metadata: Dict[str, Any] = None,
                   logger_name: str = config.LOGGER_NAME) -> bool:
@@ -70,11 +72,10 @@ def save_artifact(bucket_name: str,
 
     Args:
         bucket_name (str): The bucket that contains the artifact.
-        blob_name (str): A 'blob' is a place holder for the file itself.
-        In general the blob name is the path of the artifact inside GCS.
-        It can be a directory-like name (e.g my/gcp/blob) or a file-like name
-        (e.g my_blob).
-        artifact_path (str): The path to the file under GCS.
+        object_name (str): An 'object' is a place holder for the file itself.
+        In general the object name is the path of the artifact inside GCS.
+        It can be a directory-like name (e.g my/gcp/object) or a file-like name
+        (e.g my_object).
         metadata (Dict[str, Any], optional): [description]. Defaults to None.
         logger_name (str):  The name of the logger that logs the
         event. Defaults to 'infra'.
@@ -89,11 +90,19 @@ def save_artifact(bucket_name: str,
 
     try:
         bucket = _gcs_client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
+        blob = bucket.blob(object_name)
         blob.metadata(metadata)
 
         with open(file_path, 'rb') as f:
             blob.upload_from_file(f)
+
+        gcl_log_event(logger_name=logger_name,
+                      event_name='Artifact Upload',
+                      message='Artifact uploading completed successfully.',
+                      environment=Environments.INFRA,
+                      bucketName=bucket_name,
+                      artifactName=object_name,
+                      **log_metadata)
 
         return True
     except NotFound as nfe:
@@ -103,6 +112,7 @@ def save_artifact(bucket_name: str,
                       message=msg,
                       description=str(nfe),
                       environment=Environments.INFRA,
+                      severity=LogSeverities.WARNING,
                       bucketName=bucket_name,
                       **log_metadata)
         return False
@@ -113,7 +123,8 @@ def save_artifact(bucket_name: str,
                       message=msg,
                       description=str(gce),
                       environment=Environments.INFRA,
-                      blobName=blob_name,
+                      severity=LogSeverities.ERROR,
+                      objectName=object_name,
                       **log_metadata)
         return False
     except FileNotFoundError as fnfe:
@@ -121,95 +132,77 @@ def save_artifact(bucket_name: str,
                       event_name='Artifact Uploading Error',
                       message=str(fnfe),
                       environment=Environments.INFRA,
+                      severity=LogSeverities.WARNING,
                       filePath=file_path,
                       **log_metadata)
         return False
 
 
-class CloudStorageHandler:
-    def __init__(self):
-        """ Virtually private constructor. """
-        if GoogleCloudStorageHandler._instance != None:
-            # Fixme - how to create a private contructor and write CRITCAL log error
-            raise Exception("DbHandler is a singleton!")
-        else:
-            try:
-                msg = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + \
-                    ' db_handlers.py: Succeeded to connect to Google object store.\n'
-                self.storage_client = storage.Client()
-                self.buckets = {}
-                print(msg)
-            except Exception as e:
-                print("Can't connect to Google Cloud Storage\nDetails: {}".format(e))
+def download_artifact(bucket_name: str,
+                      object_name: str,
+                      generation: int,
+                      dest_dir: str,
+                      dest_file_name: str,
+                      logger_name: str = config.LOGGER_NAME) -> bool:
+    """
+    Download an object from Google Cloud Storage and save it as a local file.
 
-    # LOAD FUNCTIONS
-    def load_bucket(self, bucket_name):
-        if bucket_name not in self.buckets:
-            self.buckets[bucket_name] = self.storage_client.get_bucket(
-                bucket_name)
-        if self.buckets[bucket_name] is None:
-            raise ValueError("Unknown Bucket Name")
+    Args:
+        bucket_name (str): The bucket that contains the artifact.
+        object_name (str): An 'object' is a place holder for the file itself.
+        In general the object name is the path of the artifact inside GCS.
+        It can be a directory-like name (e.g my/gcp/object) or a file-like name
+        (e.g my_object).
+        generation (int): The generation of the object.
+        For more information see [object versioning](https://cloud.google.com/storage/docs/object-versioning).
+        dest_dir (str): The local directory that will contain the artifact.
+        dest_file_name (str): The artifact name on the local file system.
+        logger_name (str, optional): The name of the logger that logs the
+        event. Defaults to 'infra'.
 
-    def download_string(self, source_blob_name, bucket_name, verbose=True):
-        """Downloads a file to the bucket."""
-        self.load_bucket(bucket_name)
-        blob = self.buckets[bucket_name].get_blob(source_blob_name)
-        blob_str = blob.download_as_string()
-        if verbose:
-            print('File {} was Downloaded.'.format(source_blob_name))
-        return blob_str
+    Returns:
+        bool: True if the artifact was downloaded, false otherwise.
+    """
+    dest_full_path = path.abspath(path.join(dest_dir, dest_file_name))
+    server_ip = socket.gethostbyname(socket.gethostname())
+    log_metadata = {
+        'funcName': 'create_bucket',
+        'eventGroup': 'Google Cloud Storage'
+    }
 
-    def load_pickle_object_from_string(self, blob_name, bucket_name):
-        """[Reconstructs python object from string]
+    try:
+        bucket = _gcs_client.get_bucket(bucket_name)
+        blob = bucket.get_blob(object_name=object_name, generation=generation)
 
-        Returns:
-            [set] -- [The celebs corpus set]
-        """
-        _str = self.download_string(blob_name, bucket_name)
-        try:
-            pickle_obj = pickle.loads(_str)
-        except Exception as e:
-            msg = 'Bad pickle object:\n' + str(e)
-            print(msg)
-        return pickle_obj
+        if blob is None:
+            gcl_log_event(logger_name=logger_name,
+                          event_name='Artifact Downloading Error',
+                          message='The requested object does no exist.',
+                          environment=Environments.INFRA,
+                          severity=LogSeverities.WARNING,
+                          objectName=object_name,
+                          **log_metadata)
+            return False
 
-    # SAVE FUNCTION
+        blob.download_to_filename(dest_full_path)
+        gcl_log_event(logger_name=logger_name,
+                      event_name='Artifact Download',
+                      message='Artifact downloading completed successfully.',
+                      environment=Environments.INFRA,
+                      artifactName=object_name,
+                      artifactBucket=bucket_name,
+                      artifactGeneration=generation,
+                      localFileLocation=dest_full_path,
+                      localServerIP=server_ip,
+                      ** log_metadata)
 
-    def upload_string(self, blob, string_object):
-        """Uploads a string to the bucket."""
-        try:
-            blob.upload_from_string(string_object)
-        except Exception as e:
-            msg = "Failed to upload:\n" + str(e)
-            print(msg)
-
-    def create_blob(self, bucket_name, blob_name, metadata={}):
-        self.load_bucket(bucket_name)
-        blob = self.buckets[bucket_name].blob(blob_name)
-        blob.metadata = metadata
-        return blob
-
-    def update_blob_pickle_object(self, pickle_object, blob_name, bucket_name):
-        """[Override the blob string with the string representation for the pickle object]
-        Arguments:
-            pickle_object {[object]} -- [any python object that supported by pickle]
-            blob_name {[str]} -- [The name of the blob to write to]
-        """
-        blob = self.create_blob(bucket_name, blob_name)
-        self.upload_string(blob, pickle.dumps(pickle_object))
-
-    def upload_html(self, bucket_name, raw_html, url):
-        try:
-            url = str(url)
-            uuid_ = uuid.uuid3(uuid.NAMESPACE_URL, url).hex
-            blob_name = uuid_ + '.html'
-            metadata = {"url": url, "uuid": uuid_}
-            blob = self.create_blob(bucket_name, blob_name, metadata)
-        except Exception as e:
-            msg = 'Error getting a UUID for ' + str(url) + ':\n' + str(e)
-            print(msg)
-            return
-        self.upload_string(blob, raw_html)
-
-
-gcs_handler = GoogleCloudStorageHandler()
+        return True
+    except NotFound as nfe:
+        msg = 'Could not download the artifact.'
+        gcl_log_event(logger_name=logger_name,
+                      event_name='Artifact Downloading Error',
+                      message=msg,
+                      description=str(nfe),
+                      environment=Environments.INFRA,
+                      severity=LogSeverities.ERROR,
+                      **log_metadata)
