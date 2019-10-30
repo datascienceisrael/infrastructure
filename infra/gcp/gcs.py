@@ -7,7 +7,7 @@ from google.cloud.exceptions import Conflict, GoogleCloudError, NotFound
 
 from configuration import config
 from infra.enums import Environments, LogSeverities, StorageClasses
-from infra.logging import gcl_log_event
+from infra.gcp.gcl import gcl_log_event
 
 _gcs_client = storage.Client()
 

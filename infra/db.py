@@ -6,7 +6,7 @@ from pymongo.errors import (CollectionInvalid, ConnectionFailure,
                             OperationFailure, ServerSelectionTimeoutError)
 
 from infra.enums import LogSeverities
-from infra.logging import gcl_log_event
+from infra.gcp.gcl import gcl_log_event
 
 
 class MongoHandler():
