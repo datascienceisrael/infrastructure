@@ -9,7 +9,8 @@ _stackdriver_client = gcl.Client()
 
 
 def gcl_delete_logs(logger_name: str):
-    """Deletes all logs of the specified logger.
+    """
+    Deletes all logs of the specified logger.
 
     Args:
         logger_name (str): The requested logger.
