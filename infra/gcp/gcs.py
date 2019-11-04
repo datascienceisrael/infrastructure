@@ -2,7 +2,8 @@
 This module contains methods for using google cloud storage.
 """
 import socket
-from os import path
+import subprocess
+import os
 from typing import Any, Dict
 
 from google.cloud import storage
@@ -166,7 +167,7 @@ def download_artifact(bucket_name: str,
     Returns:
         bool: True if the artifact was downloaded, false otherwise.
     """
-    dest_full_path = path.abspath(path.join(dest_dir, dest_file_name))
+    dest_full_path = os.path.abspath(os.path.join(dest_dir, dest_file_name))
     server_ip = socket.gethostbyname(socket.gethostname())
     log_metadata = {
         'funcName': 'create_bucket',
@@ -209,3 +210,100 @@ def download_artifact(bucket_name: str,
                       environment=Environments.INFRA,
                       severity=LogSeverities.ERROR,
                       **log_metadata)
+
+
+def download_artifacts_bunch(bucket_name: str,
+                             local_directory_path: str,
+                             data_cloud_path: str = None,
+                             activate_recursive_download: bool = False,
+                             activate_parallel_download: bool = False,
+                             logger_name: str = config.LOGGER_NAME) -> bool:
+    """
+    Download a bunch of artifact form Google Cloud Storage.
+
+    Args:
+        bucket_name (str): The bucket that stores the artifacts.
+        local_directory_path (str): The local directory that will contain the
+        downloaded artifacts. If not exists, automatically created.
+        data_cloud_path (str, optional): A path to a subdirectory of the
+        bucket or a wild card path for a group of files.
+        For example:
+        * /folder/to/download
+        * /*.txt
+        If not supplied all files under the requested bucket will be
+        downloaded. Defaults to None.
+        activate_recursive_download (bool, optional): True for downloading the
+        artifacts of subfolders of the specified cloud path or bucket.
+        Defaults to False.
+        activate_parallel_download (bool, optional): True for using
+        multithreaded download. Use this only if there is a large amount of
+        artifacts to download. Defaults to False.
+        logger_name (str, optional): The name of the logger that logs the
+        event. Defaults to 'infra'.
+
+    Returns:
+        bool: True if the artifacts were downloaded, false otherwise.
+    """
+    log_metadata = {
+        'funcName': 'download_artifacts',
+        'eventGroup': 'Google Cloud Storage'
+    }
+    server_ip = socket.gethostbyname(socket.gethostname())
+
+    try:
+        if not os.path.exists(local_directory_path):
+            os.mkdir(local_directory_path)
+    except OSError as ose:
+        gcl_log_event(logger_name == logger_name,
+                      event_name='Directory Creation Error',
+                      message='Could not create the destination directory',
+                      description=str(ose),
+                      environment=Environments.INFRA,
+                      severity=LogSeverities.WARNING,
+                      localDirectoryPath=local_directory_path,
+                      **log_metadata)
+
+        return False
+
+    url = f'gs://{bucket_name}'
+
+    if data_cloud_path:
+        url = url + f'/{data_cloud_path}'
+
+    download_command = ['gsutil', 'cp', url, local_directory_path]
+
+    if activate_parallel_download:
+        index = download_command.index('gsutil', 0, len(download_command))
+        download_command.insert(index+1, '-m')
+    if activate_recursive_download:
+        index = download_command.index('cp', 0, len(download_command))
+        download_command.insert(index+1, '-r')
+
+    log_metadata.update({
+        'bucketName': bucket_name,
+        'dataCloudLocation': data_cloud_path,
+        'isRecursiveDownload': activate_recursive_download,
+        'isParallelDownload': activate_parallel_download
+    })
+
+    try:
+        subprocess.run(download_command)
+        gcl_log_event(logger_name=logger_name,
+                      event_name='Artifacts Bunch Download',
+                      message='Artifacts downloading completed successfully.',
+                      environment=Environments.INFRA,
+                      localDirectoryPath=local_directory_path,
+                      localServerIP=server_ip,
+                      **log_metadata)
+        return True
+    except Exception as e:
+        msg = 'An unexpected error occurred while trying to download the ' +\
+            'artifacts.'
+        gcl_log_event(logger_name=logger_name,
+                      event_name='Artifacts Downloading Error',
+                      message=msg,
+                      description=str(e),
+                      environment=Environments.INFRA,
+                      severity=LogSeverities.ERROR,
+                      **log_metadata)
+        return False
