@@ -86,6 +86,7 @@ class MongoHandler():
             col_name (str): The name of the new collection
             **options: Options for the collection creation.
             For more information, see [Collection Creation](https://docs.mongodb.com/manual/reference/method/db.createCollection/#db.createCollection).
+
         Returns:
            bool: True if the collection was created else False.
         """
