@@ -64,13 +64,13 @@ def create_bucket(bucket_name: str, app_name: str,
         return False
 
 
-def save_artifact(bucket_name: str,
-                  object_name: str,
-                  file_path: str,
-                  metadata: Dict[str, Any] = None,
-                  logger_name: str = config.LOGGER_NAME) -> bool:
+def upload_artifact(bucket_name: str,
+                    object_name: str,
+                    file_path: str,
+                    metadata: Dict[str, Any] = None,
+                    logger_name: str = config.LOGGER_NAME) -> bool:
     """
-    Save an artifact to Google Cloud Storage under.
+    Upload an artifact to Google Cloud Storage under.
     An "artifact" can be any type of file in any size.
     Each artifact can be saved with its own metadata.
 
@@ -80,7 +80,7 @@ def save_artifact(bucket_name: str,
         In general the object name is the path of the artifact inside GCS.
         It can be a directory-like name (e.g my/gcp/object) or a file-like name
         (e.g my_object).
-        metadata (Dict[str, Any], optional): The meta data of the artifact.
+        metadata (Dict[str, Any], optional): The metadata of the artifact.
         Defaults to None.
         logger_name (str):  The name of the logger that logs the
         event. Defaults to 'infra'.
@@ -89,7 +89,7 @@ def save_artifact(bucket_name: str,
          bool: True if the file was uploaded, false otherwise.
     """
     log_metadata = {
-        'funcName': 'save_artifact',
+        'funcName': 'upload_artifact',
         'eventGroup': 'Google Cloud Storage',
         'environment': Environments.INFRA,
     }
