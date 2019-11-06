@@ -10,8 +10,8 @@ from google.cloud import storage
 from google.cloud.exceptions import Conflict, GoogleCloudError, NotFound
 
 from configuration import config
-from infra.enums import Environments, LogSeverities, StorageClasses
-from infra.gcp.gcl import gcl_log_event
+from infra.core.enums import Environments, LogSeverities, StorageClasses
+from infra.core.gcp.gcl import gcl_log_event
 
 _gcs_client = storage.Client()
 

@@ -3,7 +3,7 @@ from time import time
 from typing import Any, Callable
 
 from configuration import config
-from infra.gcp.gcl import gcl_log_event
+from infra.core.gcp.gcl import gcl_log_event
 
 
 def measure_time(func: Callable) -> Any:
