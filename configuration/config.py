@@ -1,7 +1,7 @@
 import json
 import os
 
-# region
+# region Logging
 LOGGER_NAME = 'infra'
 # endregion
 
@@ -12,4 +12,5 @@ with open(os.path.join(os.getcwd(), 'secrets.json'), 'rb') as sec_file:
 
 # region Google Cloud Platform
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = secrets['gcp_secrets_path']
+GCS_ARTIFACTS_TEMP_FOLDER = os.path.join(os.getcwd(), '../temp_artifacts')
 # endregion
