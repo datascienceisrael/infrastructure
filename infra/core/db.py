@@ -117,6 +117,7 @@ class MongoHandler():
             msg = f'A connection error has occurred while trying to create '\
                 f'a collection.\nError message: {err}'
             print(msg)
+
             return False
 
     def delete_collection(self, col_name: str) -> bool:
@@ -143,17 +144,20 @@ class MongoHandler():
                               message=result['errmsg'],
                               severity=LogSeverities.WARNING,
                               **metadata)
+                              
                 return False
 
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Deleted',
                           message='Collection was deleted.',
                           **metadata)
+
             return True
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
             msg = f'A connection error has occurred while trying to delete '\
                 f'the collection.\nError message: {err}'
             print(msg)
+
             return False
 
     def update_collection_schema(self, col_name: str,
@@ -197,17 +201,20 @@ class MongoHandler():
                               message=result['errmsg'],
                               severity=LogSeverities.WARNING,
                               **metadata)
+
                 return False
 
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Schema Updated',
                           message='The new schema was applied.',
                           **metadata)
+
             return True
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
             msg = f'A connection error has occurred while trying to update '\
                 f'the collection schema.\nError message: {err}'
             print(msg)
+
             return False
         except OperationFailure as ope:
             msg = 'The operation has failed, the schema was not updated.'
@@ -217,6 +224,7 @@ class MongoHandler():
                           description=str(ope),
                           severity=LogSeverities.ERROR,
                           **metadata)
+
             return False
 
     @property

@@ -30,5 +30,6 @@ def measure_time(func: Callable) -> Any:
                       message=msg,
                       functionName=func.__name__,
                       runTime=run_time)
+                      
         return rv
     return wrapper
