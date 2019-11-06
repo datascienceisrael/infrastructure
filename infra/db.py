@@ -1,3 +1,8 @@
+"""
+This modules contains classes and methods for using various databases.
+Currently supported:
+*  MongoDB
+"""
 from typing import Any, Dict
 
 from pymongo import MongoClient
@@ -6,7 +11,7 @@ from pymongo.errors import (CollectionInvalid, ConnectionFailure,
                             OperationFailure, ServerSelectionTimeoutError)
 
 from infra.enums import LogSeverities
-from infra.logging import gcl_log_event
+from infra.gcp.gcl import gcl_log_event
 
 
 class MongoHandler():
@@ -36,15 +41,18 @@ class MongoHandler():
         """
         self._db = self._client.get_database(name=db_name)
         self._curr_db_name = db_name
+        metadata = {
+            'oldDB': self._curr_db_name,
+            'newDB': db_name,
+            'className': 'MongoHandler',
+            'funcName': 'change_db',
+            'eventGroup': 'Mongo'
+        }
 
         gcl_log_event(logger_name=self._logger_name,
                       event_name='DB Changed',
                       message='A user requested to change the db.',
-                      old_db=self._curr_db_name,
-                      new_db=db_name,
-                      class_name='MongoHandler',
-                      func_name='change_db',
-                      event_group='Mongo')
+                      **metadata)
 
     def get_collection(self, col_name: str) -> Collection:
         """Get a collection from the current db.
@@ -56,15 +64,18 @@ class MongoHandler():
             Collection: The collection instance.
         """
         collection = self._db.get_collection(col_name)
+        metadata = {
+            'collName': col_name,
+            'className': 'MongoHandler',
+            'funcName': 'get_collection',
+            'eventGroup': 'Mongo'
+        }
 
         gcl_log_event(logger_name=self._logger_name,
                       event_name='Collection Changed',
                       message='A new collection was requested.',
                       severity=LogSeverities.DEBUG,
-                      collection_name=col_name,
-                      class_name='MongoHandler',
-                      func_name='get_collection',
-                      event_group='Mongo')
+                      **metadata)
 
         return collection
 
@@ -75,19 +86,23 @@ class MongoHandler():
             col_name (str): The name of the new collection
             **options: Options for the collection creation.
             For more information, see [Collection Creation](https://docs.mongodb.com/manual/reference/method/db.createCollection/#db.createCollection).
+
         Returns:
            bool: True if the collection was created else False.
         """
         try:
             self._db.create_collection(col_name, **options)
+            metadata = {
+                'collName': col_name,
+                'className': 'MongoHandler',
+                'funcName': 'create_collection',
+                'eventGroup': 'Mongo'
+            }
 
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Created',
                           message='A new collection was created.',
-                          collection_name=col_name,
-                          class_name='MongoHandler',
-                          func_name='create_collection',
-                          event_group='Mongo')
+                          **metadata)
 
             return True
         except CollectionInvalid as cie:
@@ -95,9 +110,7 @@ class MongoHandler():
                           event_name='Collection Error',
                           message=str(cie),
                           severity=LogSeverities.ERROR,
-                          class_name='MongoHandler',
-                          func_name='create_collection',
-                          event_group='Mongo')
+                          **metadata)
 
             return False
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
@@ -117,24 +130,25 @@ class MongoHandler():
         """
         try:
             result = self._db.drop_collection(col_name)
+            metadata = {
+                'collName': col_name,
+                'className': 'MongoHandler',
+                'funcName': 'create_collection',
+                'eventGroup': 'Mongo'
+            }
 
             if 'errmsg' in result:
                 gcl_log_event(logger_name=self._logger_name,
                               event_name='Collection Error',
                               message=result['errmsg'],
                               severity=LogSeverities.WARNING,
-                              collection_name=col_name,
-                              class_name='MongoHandler',
-                              func_name='delete_collection',
-                              event_group='Mongo')
+                              **metadata)
                 return False
 
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Deleted',
-                          message='A collection was deleted.',
-                          class_name='MongoHandler',
-                          func_name='delete_collection',
-                          event_group='Mongo')
+                          message='Collection was deleted.',
+                          **metadata)
             return True
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
             msg = f'A connection error has occurred while trying to delete '\
@@ -167,28 +181,28 @@ class MongoHandler():
                                       validator=schema,
                                       validationLevel=validation_level,
                                       validationAction=validation_action)
+            metadata = {
+                'collName': col_name,
+                'className': 'MongoHandler',
+                'funcName': 'create_collection',
+                'validator': schema,
+                'validationLevel': validation_level,
+                'validationAction': validation_action,
+                'eventGroup': 'Mongo'
+            }
 
             if 'errmsg' in result:
                 gcl_log_event(logger_name=self._logger_name,
                               event_name='Collection Error',
                               message=result['errmsg'],
                               severity=LogSeverities.WARNING,
-                              collection_name=col_name,
-                              class_name='MongoHandler',
-                              func_name='update_collection_schema',
-                              event_group='Mongo')
+                              **metadata)
                 return False
 
             gcl_log_event(logger_name=self._logger_name,
                           event_name='Collection Schema Updated',
                           message='The new schema was applied.',
-                          collection_name=col_name,
-                          validator=schema,
-                          validationLevel=validation_level,
-                          validationAction=validation_action,
-                          class_name='MongoHandler',
-                          func_name='update_collection_schema',
-                          event_group='Mongo')
+                          **metadata)
             return True
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
             msg = f'A connection error has occurred while trying to update '\
@@ -202,10 +216,7 @@ class MongoHandler():
                           message=msg,
                           description=str(ope),
                           severity=LogSeverities.ERROR,
-                          collection_name=col_name,
-                          class_name='MongoHandler',
-                          func_name='update_collection_schema',
-                          event_group='Mongo')
+                          **metadata)
             return False
 
     @property

@@ -4,15 +4,17 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pytest = "*"
 rope = "*"
 autopep8 = "*"
 flake8 = "*"
+jupyter = "*"
+pytest = "*"
 
 [packages]
 pymongo = "*"
 google-cloud-logging = "*"
 aenum = "*"
+google-cloud-storage = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"
