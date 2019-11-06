@@ -119,6 +119,7 @@ def upload_artifact(bucket_name: str,
                       severity=LogSeverities.WARNING,
                       bucketName=bucket_name,
                       **log_metadata)
+
         return False
     except GoogleCloudError as gce:
         msg = 'An error accrued while trying to upload the file.'
@@ -129,6 +130,7 @@ def upload_artifact(bucket_name: str,
                       severity=LogSeverities.ERROR,
                       objectName=object_name,
                       **log_metadata)
+
         return False
     except FileNotFoundError as fnfe:
         gcl_log_event(logger_name=logger_name,
@@ -137,6 +139,7 @@ def upload_artifact(bucket_name: str,
                       severity=LogSeverities.WARNING,
                       filePath=file_path,
                       **log_metadata)
+
         return False
 
 
@@ -184,6 +187,7 @@ def download_artifact(bucket_name: str,
                           severity=LogSeverities.WARNING,
                           objectName=object_name,
                           **log_metadata)
+
             return False
 
         blob.download_to_filename(dest_full_path)
