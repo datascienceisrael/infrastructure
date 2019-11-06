@@ -24,7 +24,7 @@ def create_bucket(bucket_name: str, app_name: str,
 
      Args:
          bucket_name (str): The name of the bucket.
-         app_name (str): The name of the application the use this function.
+         app_name (str): The name of the application using this function.
          This name is used to create a unique name for the bucket.
          storage_class (str): The storage class of the bucket.
          Possible options are: STANDARD, NEARLINE, COLDLINE.
@@ -37,9 +37,10 @@ def create_bucket(bucket_name: str, app_name: str,
      """
     unique_name = app_name + '_' + bucket_name
     log_metadata = {
-        'bucketName': bucket_name,
+        'bucketName': unique_name,
         'funcName': 'create_bucket',
-        'eventGroup': 'Google Cloud Storage'
+        'eventGroup': 'Google Cloud Storage',
+        'environment': Environments.INFRA,
     }
 
     try:
@@ -49,7 +50,7 @@ def create_bucket(bucket_name: str, app_name: str,
         gcl_log_event(logger_name=logger_name,
                       event_name='Bucket Created',
                       message='A new bucket was created',
-                      environment=Environments.INFRA,
+                      storageClass=storage_class.name.lower(),
                       **log_metadata)
 
         return True
@@ -57,8 +58,7 @@ def create_bucket(bucket_name: str, app_name: str,
         gcl_log_event(logger_name=logger_name,
                       event_name='Bucket Error',
                       message=str(ce),
-                      environment=Environments.INFRA,
-                      severity=LogSeverities.WARNING,
+                      severity=LogSeverities.ERROR,
                       **log_metadata)
 
         return False
@@ -80,7 +80,8 @@ def save_artifact(bucket_name: str,
         In general the object name is the path of the artifact inside GCS.
         It can be a directory-like name (e.g my/gcp/object) or a file-like name
         (e.g my_object).
-        metadata (Dict[str, Any], optional): [description]. Defaults to None.
+        metadata (Dict[str, Any], optional): The meta data of the artifact.
+        Defaults to None.
         logger_name (str):  The name of the logger that logs the
         event. Defaults to 'infra'.
 
@@ -89,7 +90,8 @@ def save_artifact(bucket_name: str,
     """
     log_metadata = {
         'funcName': 'save_artifact',
-        'eventGroup': 'Google Cloud Storage'
+        'eventGroup': 'Google Cloud Storage',
+        'environment': Environments.INFRA,
     }
 
     try:
@@ -103,9 +105,8 @@ def save_artifact(bucket_name: str,
         gcl_log_event(logger_name=logger_name,
                       event_name='Artifact Upload',
                       message='Artifact uploading completed successfully.',
-                      environment=Environments.INFRA,
                       bucketName=bucket_name,
-                      artifactName=object_name,
+                      objectName=object_name,
                       **log_metadata)
 
         return True
@@ -115,7 +116,6 @@ def save_artifact(bucket_name: str,
                       event_name='Artifact Uploading Error',
                       message=msg,
                       description=str(nfe),
-                      environment=Environments.INFRA,
                       severity=LogSeverities.WARNING,
                       bucketName=bucket_name,
                       **log_metadata)
@@ -126,7 +126,6 @@ def save_artifact(bucket_name: str,
                       event_name='Artifact Uploading Error',
                       message=msg,
                       description=str(gce),
-                      environment=Environments.INFRA,
                       severity=LogSeverities.ERROR,
                       objectName=object_name,
                       **log_metadata)
@@ -135,7 +134,6 @@ def save_artifact(bucket_name: str,
         gcl_log_event(logger_name=logger_name,
                       event_name='Artifact Uploading Error',
                       message=str(fnfe),
-                      environment=Environments.INFRA,
                       severity=LogSeverities.WARNING,
                       filePath=file_path,
                       **log_metadata)
@@ -170,8 +168,9 @@ def download_artifact(bucket_name: str,
     dest_full_path = os.path.abspath(os.path.join(dest_dir, dest_file_name))
     server_ip = socket.gethostbyname(socket.gethostname())
     log_metadata = {
-        'funcName': 'create_bucket',
-        'eventGroup': 'Google Cloud Storage'
+        'funcName': 'download_artifact',
+        'eventGroup': 'Google Cloud Storage',
+        'environment': Environments.INFRA,
     }
 
     try:
@@ -181,8 +180,7 @@ def download_artifact(bucket_name: str,
         if blob is None:
             gcl_log_event(logger_name=logger_name,
                           event_name='Artifact Downloading Error',
-                          message='The requested object does no exist.',
-                          environment=Environments.INFRA,
+                          message='The requested object does not exist.',
                           severity=LogSeverities.WARNING,
                           objectName=object_name,
                           **log_metadata)
@@ -192,10 +190,9 @@ def download_artifact(bucket_name: str,
         gcl_log_event(logger_name=logger_name,
                       event_name='Artifact Download',
                       message='Artifact downloading completed successfully.',
-                      environment=Environments.INFRA,
-                      artifactName=object_name,
-                      artifactBucket=bucket_name,
-                      artifactGeneration=generation,
+                      objectName=object_name,
+                      bucketName=bucket_name,
+                      objectGeneration=generation,
                       localFileLocation=dest_full_path,
                       localServerIP=server_ip,
                       ** log_metadata)
@@ -207,7 +204,6 @@ def download_artifact(bucket_name: str,
                       event_name='Artifact Downloading Error',
                       message=msg,
                       description=str(nfe),
-                      environment=Environments.INFRA,
                       severity=LogSeverities.ERROR,
                       **log_metadata)
 
@@ -245,23 +241,23 @@ def download_artifacts_bunch(bucket_name: str,
         bool: True if the artifacts were downloaded, false otherwise.
     """
     log_metadata = {
-        'funcName': 'download_artifacts',
-        'eventGroup': 'Google Cloud Storage'
+        'funcName': 'download_artifacts_bunch',
+        'eventGroup': 'Google Cloud Storage',
+        'environment': Environments.INFRA,
     }
     server_ip = socket.gethostbyname(socket.gethostname())
 
-    try:
-        if not os.path.exists(local_directory_path):
+    if not os.path.exists(local_directory_path):
+        try:
             os.mkdir(local_directory_path)
-    except OSError as ose:
-        gcl_log_event(logger_name == logger_name,
-                      event_name='Directory Creation Error',
-                      message='Could not create the destination directory',
-                      description=str(ose),
-                      environment=Environments.INFRA,
-                      severity=LogSeverities.WARNING,
-                      localDirectoryPath=local_directory_path,
-                      **log_metadata)
+        except OSError as ose:
+            gcl_log_event(logger_name=logger_name,
+                          event_name='Directory Creation Error',
+                          message='Could not create the destination directory',
+                          description=str(ose),
+                          severity=LogSeverities.ERROR,
+                          localDirectoryPath=local_directory_path,
+                          **log_metadata)
 
         return False
 
@@ -291,10 +287,10 @@ def download_artifacts_bunch(bucket_name: str,
         gcl_log_event(logger_name=logger_name,
                       event_name='Artifacts Bunch Download',
                       message='Artifacts downloading completed successfully.',
-                      environment=Environments.INFRA,
                       localDirectoryPath=local_directory_path,
                       localServerIP=server_ip,
                       **log_metadata)
+
         return True
     except Exception as e:
         msg = 'An unexpected error occurred while trying to download the ' +\
@@ -303,7 +299,7 @@ def download_artifacts_bunch(bucket_name: str,
                       event_name='Artifacts Downloading Error',
                       message=msg,
                       description=str(e),
-                      environment=Environments.INFRA,
                       severity=LogSeverities.ERROR,
                       **log_metadata)
+
         return False
