@@ -1,16 +1,18 @@
 import json
 import os
+from typing import Any, Dict
 
-# region Logging
-LOGGER_NAME = 'infra'
-# endregion
+config = None
 
-# region Credentials
-with open(os.path.join(os.getcwd(), 'secrets.json'), 'rb') as sec_file:
-    secrets = json.load(sec_file)
-# endregion
 
-# region Google Cloud Platform
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = secrets['gcp_secrets_path']
-GCS_ARTIFACTS_TEMP_FOLDER = os.path.join(os.getcwd(), '../temp_artifacts')
-# endregion
+def _init_config() -> Dict[str, Any]:
+    rv = None
+    config_file_path = os.path.join(os.getcwd(), 'infra_config.json')
+    with open(config_file_path, 'rb') as cf:
+        rv = json.load(cf)
+
+    return rv
+
+
+if __name__ == "__main__":
+    config = _init_config()
