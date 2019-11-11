@@ -37,3 +37,5 @@ def log_event(event_name: str,
     if logging_engine == LoggingEngines.GOOGLE.name.lower():
         gcl_log_event(logger_name, event, severity)
         return
+
+    print(f'The selected engine ({logging_engine}) does not exist.')

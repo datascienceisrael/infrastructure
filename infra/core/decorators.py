@@ -2,8 +2,7 @@ import functools
 from time import time
 from typing import Any, Callable
 
-from configuration import config
-from infra.core.gcp.gcl import gcl_log_event
+from infra.core.logging import log_event
 
 
 def measure_time(func: Callable) -> Any:
@@ -25,11 +24,10 @@ def measure_time(func: Callable) -> Any:
         run_time = end_time - start_time
         msg = f'The function {func.__name__} completed in {run_time:.4f} ' +\
             f'secs.'
-        gcl_log_event(logger_name=config.LOGGER_NAME, # TODO: change to log_event
-                      event_name='Time Measurement',
-                      message=msg,
-                      functionName=func.__name__,
-                      runTime=run_time)
-                      
+        log_event(event_name='Time Measurement',
+                  message=msg,
+                  functionName=func.__name__,
+                  runTime=run_time)
+
         return rv
     return wrapper

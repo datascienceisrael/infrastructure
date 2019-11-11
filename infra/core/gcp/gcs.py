@@ -107,7 +107,7 @@ def upload_artifact(bucket_name: str,
         log_event(event_name='Artifact Uploading Error',
                   message=msg,
                   description=str(nfe),
-                  severity=LogSeverities.WARNING,
+                  severity=LogSeverities.ERROR,
                   bucketName=bucket_name,
                   **log_metadata)
 
@@ -125,7 +125,7 @@ def upload_artifact(bucket_name: str,
     except FileNotFoundError as fnfe:
         log_event(event_name='Artifact Uploading Error',
                   message=str(fnfe),
-                  severity=LogSeverities.WARNING,
+                  severity=LogSeverities.ERROR,
                   filePath=file_path,
                   **log_metadata)
 
