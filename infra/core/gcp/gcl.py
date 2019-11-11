@@ -29,7 +29,7 @@ def gcl_log_event(logger_name: str,
     Args:
         logger_name (str): The name of the logger that logs the event.
         event_name (str): The event name.
-        message (str): The event message.
+        message (str): The event message. # TODO: update docstring to match new function
         description (str): The event description.
         environment (Environments): The environment that the longs belong to.
         Defaults to DEV
