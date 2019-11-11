@@ -1,9 +1,11 @@
 """
 This module contains methods for using google stackdriver logging service.
 """
+from typing import Any, Dict
+
 import google.cloud.logging as gcl
 
-from infra.enums import LogSeverities, Environments
+from infra.core.enums import LogSeverities
 
 _stackdriver_client = gcl.Client()
 
@@ -19,11 +21,9 @@ def gcl_delete_logs(logger_name: str):
     logger.delete()
 
 
-def gcl_log_event(logger_name: str, event_name: str,  message: str,
-                  description: str = None,
-                  environment: Environments = Environments.DEV,
-                  severity: LogSeverities = LogSeverities.INFO,
-                  **kwargs):
+def gcl_log_event(logger_name: str,
+                  event: Dict[str, Any],
+                  severity: LogSeverities):
     """Log an event to Google Cloud Logging (Stackdrive).
 
     Args:
@@ -37,15 +37,7 @@ def gcl_log_event(logger_name: str, event_name: str,  message: str,
         **kwargs: Any other metadata on the event.
     """
     logger = _stackdriver_client.logger(logger_name)
-
-    info = {
-        'message': message,
-        'name': event_name,
-        'description': description,
-        'env': environment.name.lower()
-    }
-    info.update(kwargs)
-    logger.log_struct(info, severity=severity.name)
+    logger.log_struct(event, severity=severity.name)
 
 
 __all__ = ['gcl_log_event', 'gcl_delete_logs']

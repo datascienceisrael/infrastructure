@@ -11,7 +11,7 @@ from pymongo.errors import (CollectionInvalid, ConnectionFailure,
                             OperationFailure, ServerSelectionTimeoutError)
 
 from infra.core.enums import LogSeverities
-from infra.core.gcp.gcl import gcl_log_event
+from infra.core.logging import log_event
 
 
 class MongoHandler():
@@ -49,10 +49,10 @@ class MongoHandler():
             'eventGroup': 'Mongo'
         }
 
-        gcl_log_event(logger_name=self._logger_name,
-                      event_name='DB Changed',
-                      message='A user requested to change the db.',
-                      **metadata)
+        log_event(logger_name=self._logger_name,
+                  event_name='DB Changed',
+                  message='A user requested to change the db.',
+                  **metadata)
 
     def get_collection(self, col_name: str) -> Collection:
         """Get a collection from the current db.
@@ -71,11 +71,11 @@ class MongoHandler():
             'eventGroup': 'Mongo'
         }
 
-        gcl_log_event(logger_name=self._logger_name,
-                      event_name='Collection Changed',
-                      message='A new collection was requested.',
-                      severity=LogSeverities.DEBUG,
-                      **metadata)
+        log_event(logger_name=self._logger_name,
+                  event_name='Collection Changed',
+                  message='A new collection was requested.',
+                  severity=LogSeverities.DEBUG,
+                  **metadata)
 
         return collection
 
@@ -99,18 +99,18 @@ class MongoHandler():
                 'eventGroup': 'Mongo'
             }
 
-            gcl_log_event(logger_name=self._logger_name,
-                          event_name='Collection Created',
-                          message='A new collection was created.',
-                          **metadata)
+            log_event(logger_name=self._logger_name,
+                      event_name='Collection Created',
+                      message='A new collection was created.',
+                      **metadata)
 
             return True
         except CollectionInvalid as cie:
-            gcl_log_event(logger_name=self._logger_name,
-                          event_name='Collection Error',
-                          message=str(cie),
-                          severity=LogSeverities.ERROR,
-                          **metadata)
+            log_event(logger_name=self._logger_name,
+                      event_name='Collection Error',
+                      message=str(cie),
+                      severity=LogSeverities.ERROR,
+                      **metadata)
 
             return False
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
@@ -139,18 +139,18 @@ class MongoHandler():
             }
 
             if 'errmsg' in result:
-                gcl_log_event(logger_name=self._logger_name,
-                              event_name='Collection Error',
-                              message=result['errmsg'],
-                              severity=LogSeverities.WARNING,
-                              **metadata)
-                              
+                log_event(logger_name=self._logger_name,
+                          event_name='Collection Error',
+                          message=result['errmsg'],
+                          severity=LogSeverities.WARNING,
+                          **metadata)
+
                 return False
 
-            gcl_log_event(logger_name=self._logger_name,
-                          event_name='Collection Deleted',
-                          message='Collection was deleted.',
-                          **metadata)
+            log_event(logger_name=self._logger_name,
+                      event_name='Collection Deleted',
+                      message='Collection was deleted.',
+                      **metadata)
 
             return True
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
@@ -196,18 +196,18 @@ class MongoHandler():
             }
 
             if 'errmsg' in result:
-                gcl_log_event(logger_name=self._logger_name,
-                              event_name='Collection Error',
-                              message=result['errmsg'],
-                              severity=LogSeverities.WARNING,
-                              **metadata)
+                log_event(logger_name=self._logger_name,
+                          event_name='Collection Error',
+                          message=result['errmsg'],
+                          severity=LogSeverities.WARNING,
+                          **metadata)
 
                 return False
 
-            gcl_log_event(logger_name=self._logger_name,
-                          event_name='Collection Schema Updated',
-                          message='The new schema was applied.',
-                          **metadata)
+            log_event(logger_name=self._logger_name,
+                      event_name='Collection Schema Updated',
+                      message='The new schema was applied.',
+                      **metadata)
 
             return True
         except (ConnectionFailure, ServerSelectionTimeoutError) as err:
@@ -218,12 +218,12 @@ class MongoHandler():
             return False
         except OperationFailure as ope:
             msg = 'The operation has failed, the schema was not updated.'
-            gcl_log_event(logger_name=self._logger_name,
-                          event_name='Collection Error',
-                          message=msg,
-                          description=str(ope),
-                          severity=LogSeverities.ERROR,
-                          **metadata)
+            log_event(logger_name=self._logger_name,
+                      event_name='Collection Error',
+                      message=msg,
+                      description=str(ope),
+                      severity=LogSeverities.ERROR,
+                      **metadata)
 
             return False
 

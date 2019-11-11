@@ -39,3 +39,11 @@ class Environments(enum.Flag):
     STAGING = enum.auto()
     PROD = enum.auto()
     INFRA = TEST | DEV | STAGING | PROD
+
+
+class LoggingEngines(enum.Flag):
+    """
+    Represents the possible logging engines.
+    """
+    PYTHON: enum.auto()
+    GOOGLE: enum.auto()

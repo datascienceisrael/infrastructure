@@ -1,24 +1,23 @@
 """
 This module contains methods for using google cloud storage.
 """
+import os
 import socket
 import subprocess
-import os
 from typing import Any, Dict
 
 from google.cloud import storage
 from google.cloud.exceptions import Conflict, GoogleCloudError, NotFound
 
-from configuration import config
 from infra.core.enums import Environments, LogSeverities, StorageClasses
-from infra.core.gcp.gcl import gcl_log_event
+from infra.core.logging import log_event
 
 _gcs_client = storage.Client()
 
 
 def create_bucket(bucket_name: str, app_name: str,
                   storage_class: StorageClasses = StorageClasses.STANDARD,
-                  logger_name: str = config.LOGGER_NAME) -> bool:
+                  ) -> bool:
     """
      Create a new bucket in Google Cloud Storage.
 
@@ -29,8 +28,6 @@ def create_bucket(bucket_name: str, app_name: str,
          storage_class (str): The storage class of the bucket.
          Possible options are: STANDARD, NEARLINE, COLDLINE.
          Defaults to StorageClasses.STANDARD.
-         logger_name (str, optional): The name of the logger that logs the
-         event. Defaults to 'infra'.
 
      Returns:
          bool: True if the bucket was created, false otherwise.
@@ -47,19 +44,17 @@ def create_bucket(bucket_name: str, app_name: str,
         new_bucket = _gcs_client.bucket(unique_name)
         new_bucket.storage_class(storage_class.name.upper())
         _gcs_client.create_bucket(new_bucket)
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Bucket Created',
-                      message='A new bucket was created',
-                      storageClass=storage_class.name.lower(),
-                      **log_metadata)
+        log_event(event_name='Bucket Created',
+                  message='A new bucket was created',
+                  storageClass=storage_class.name.lower(),
+                  **log_metadata)
 
         return True
     except Conflict as ce:
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Bucket Error',
-                      message=str(ce),
-                      severity=LogSeverities.ERROR,
-                      **log_metadata)
+        log_event(event_name='Bucket Error',
+                  message=str(ce),
+                  severity=LogSeverities.ERROR,
+                  **log_metadata)
 
         return False
 
@@ -67,8 +62,7 @@ def create_bucket(bucket_name: str, app_name: str,
 def upload_artifact(bucket_name: str,
                     object_name: str,
                     file_path: str,
-                    metadata: Dict[str, Any] = None,
-                    logger_name: str = config.LOGGER_NAME) -> bool:
+                    metadata: Dict[str, Any] = None) -> bool:
     """
     Upload an artifact to Google Cloud Storage under.
     An "artifact" can be any type of file in any size.
@@ -80,10 +74,9 @@ def upload_artifact(bucket_name: str,
         In general the object name is the path of the artifact inside GCS.
         It can be a directory-like name (e.g my/gcp/object) or a file-like name
         (e.g my_object).
+        file_path (str): The location of the file to upload in the file system.
         metadata (Dict[str, Any], optional): The metadata of the artifact.
         Defaults to None.
-        logger_name (str):  The name of the logger that logs the
-        event. Defaults to 'infra'.
 
     Returns:
          bool: True if the file was uploaded, false otherwise.
@@ -102,43 +95,39 @@ def upload_artifact(bucket_name: str,
         with open(file_path, 'rb') as f:
             blob.upload_from_file(f)
 
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifact Upload',
-                      message='Artifact uploading completed successfully.',
-                      bucketName=bucket_name,
-                      objectName=object_name,
-                      **log_metadata)
+        log_event(event_name='Artifact Upload',
+                  message='Artifact uploading completed successfully.',
+                  bucketName=bucket_name,
+                  objectName=object_name,
+                  **log_metadata)
 
         return True
     except NotFound as nfe:
         msg = 'The requested bucket was not found.'
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifact Uploading Error',
-                      message=msg,
-                      description=str(nfe),
-                      severity=LogSeverities.WARNING,
-                      bucketName=bucket_name,
-                      **log_metadata)
+        log_event(event_name='Artifact Uploading Error',
+                  message=msg,
+                  description=str(nfe),
+                  severity=LogSeverities.WARNING,
+                  bucketName=bucket_name,
+                  **log_metadata)
 
         return False
     except GoogleCloudError as gce:
         msg = 'An error accrued while trying to upload the file.'
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifact Uploading Error',
-                      message=msg,
-                      description=str(gce),
-                      severity=LogSeverities.ERROR,
-                      objectName=object_name,
-                      **log_metadata)
+        log_event(event_name='Artifact Uploading Error',
+                  message=msg,
+                  description=str(gce),
+                  severity=LogSeverities.ERROR,
+                  objectName=object_name,
+                  **log_metadata)
 
         return False
     except FileNotFoundError as fnfe:
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifact Uploading Error',
-                      message=str(fnfe),
-                      severity=LogSeverities.WARNING,
-                      filePath=file_path,
-                      **log_metadata)
+        log_event(event_name='Artifact Uploading Error',
+                  message=str(fnfe),
+                  severity=LogSeverities.WARNING,
+                  filePath=file_path,
+                  **log_metadata)
 
         return False
 
@@ -147,8 +136,7 @@ def download_artifact(bucket_name: str,
                       object_name: str,
                       generation: int,
                       dest_dir: str,
-                      dest_file_name: str,
-                      logger_name: str = config.LOGGER_NAME) -> bool:
+                      dest_file_name: str) -> bool:
     """
     Download an object from Google Cloud Storage and save it as a local file.
 
@@ -162,8 +150,6 @@ def download_artifact(bucket_name: str,
         For more information see [object versioning](https://cloud.google.com/storage/docs/object-versioning).
         dest_dir (str): The local directory that will contain the artifact.
         dest_file_name (str): The artifact name on the local file system.
-        logger_name (str, optional): The name of the logger that logs the
-        event. Defaults to 'infra'.
 
     Returns:
         bool: True if the artifact was downloaded, false otherwise.
@@ -181,43 +167,39 @@ def download_artifact(bucket_name: str,
         blob = bucket.get_blob(object_name=object_name, generation=generation)
 
         if blob is None:
-            gcl_log_event(logger_name=logger_name,
-                          event_name='Artifact Downloading Error',
-                          message='The requested object does not exist.',
-                          severity=LogSeverities.WARNING,
-                          objectName=object_name,
-                          **log_metadata)
+            log_event(event_name='Artifact Downloading Error',
+                      message='The requested object does not exist.',
+                      severity=LogSeverities.WARNING,
+                      objectName=object_name,
+                      **log_metadata)
 
             return False
 
         blob.download_to_filename(dest_full_path)
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifact Download',
-                      message='Artifact downloading completed successfully.',
-                      objectName=object_name,
-                      bucketName=bucket_name,
-                      objectGeneration=generation,
-                      localFileLocation=dest_full_path,
-                      localServerIP=server_ip,
-                      ** log_metadata)
+        log_event(event_name='Artifact Download',
+                  message='Artifact downloading completed successfully.',
+                  objectName=object_name,
+                  bucketName=bucket_name,
+                  objectGeneration=generation,
+                  localFileLocation=dest_full_path,
+                  localServerIP=server_ip,
+                  ** log_metadata)
 
         return True
     except NotFound as nfe:
         msg = 'Could not download the artifact.'
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifact Downloading Error',
-                      message=msg,
-                      description=str(nfe),
-                      severity=LogSeverities.ERROR,
-                      **log_metadata)
+        log_event(event_name='Artifact Downloading Error',
+                  message=msg,
+                  description=str(nfe),
+                  severity=LogSeverities.ERROR,
+                  **log_metadata)
 
 
 def download_artifacts_bunch(bucket_name: str,
                              local_directory_path: str,
                              data_cloud_path: str = None,
                              activate_recursive_download: bool = False,
-                             activate_parallel_download: bool = False,
-                             logger_name: str = config.LOGGER_NAME) -> bool:
+                             activate_parallel_download: bool = False) -> bool:
     """
     Download a bunch of artifact form Google Cloud Storage.
 
@@ -238,8 +220,6 @@ def download_artifacts_bunch(bucket_name: str,
         activate_parallel_download (bool, optional): True for using
         multithreaded download. Use this only if there is a large amount of
         artifacts to download. Defaults to False.
-        logger_name (str, optional): The name of the logger that logs the
-        event. Defaults to 'infra'.
 
     Returns:
         bool: True if the artifacts were downloaded, false otherwise.
@@ -255,13 +235,12 @@ def download_artifacts_bunch(bucket_name: str,
         try:
             os.mkdir(local_directory_path)
         except OSError as ose:
-            gcl_log_event(logger_name=logger_name,
-                          event_name='Directory Creation Error',
-                          message='Could not create the destination directory',
-                          description=str(ose),
-                          severity=LogSeverities.ERROR,
-                          localDirectoryPath=local_directory_path,
-                          **log_metadata)
+            log_event(event_name='Directory Creation Error',
+                      message='Could not create the destination directory',
+                      description=str(ose),
+                      severity=LogSeverities.ERROR,
+                      localDirectoryPath=local_directory_path,
+                      **log_metadata)
 
         return False
 
@@ -288,22 +267,20 @@ def download_artifacts_bunch(bucket_name: str,
 
     try:
         subprocess.run(download_command)
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifacts Bunch Download',
-                      message='Artifacts downloading completed successfully.',
-                      localDirectoryPath=local_directory_path,
-                      localServerIP=server_ip,
-                      **log_metadata)
+        log_event(event_name='Artifacts Bunch Download',
+                  message='Artifacts downloading completed successfully.',
+                  localDirectoryPath=local_directory_path,
+                  localServerIP=server_ip,
+                  **log_metadata)
 
         return True
     except Exception as e:
         msg = 'An unexpected error occurred while trying to download the ' +\
             'artifacts.'
-        gcl_log_event(logger_name=logger_name,
-                      event_name='Artifacts Downloading Error',
-                      message=msg,
-                      description=str(e),
-                      severity=LogSeverities.ERROR,
-                      **log_metadata)
+        log_event(event_name='Artifacts Downloading Error',
+                  message=msg,
+                  description=str(e),
+                  severity=LogSeverities.ERROR,
+                  **log_metadata)
 
         return False
