@@ -3,7 +3,7 @@ from logging.handlers import RotatingFileHandler
 from typing import Any, Dict
 
 from configuration.config import config
-from infra.core.enums import Environments, LoggingEngines, LogSeverities
+from infra.core.enums import Environments, LogSeverities
 from infra.core.gcp.gcl import gcl_log_event
 
 _logging_conf: Dict[str, Any] = config['logging']
@@ -29,6 +29,12 @@ def python_log_event(logger_name: str,
     logger.log(logger.level, str(event))
 
 
+LOG_ENGINES = {
+    'python': python_log_event,
+    'google': gcl_log_event
+}
+
+
 def log_event(event_name: str,
               message: str,
               description: str = None,
@@ -43,11 +49,10 @@ def log_event(event_name: str,
     }
     event.update(kwargs)
 
-    if DEFAULT_LOGGING_ENGINE == LoggingEngines.PYTHON.name.lower():
-        python_log_event(DEFAULT_LOGGER_NAME, event, severity)
-        return
-    if DEFAULT_LOGGING_ENGINE == LoggingEngines.GOOGLE.name.lower():
-        gcl_log_event(DEFAULT_LOGGER_NAME, event, severity)
-        return
-
-    print(f'The selected engine ({DEFAULT_LOGGING_ENGINE}) does not exist.')
+    try:
+        LOG_ENGINES[DEFAULT_LOGGING_ENGINE](DEFAULT_LOGGER_NAME, event,
+                                            severity)
+    except KeyError:
+        print(f'The selected engine({DEFAULT_LOGGING_ENGINE}) does not exist.'
+              f'Currently you can choose one of the following engines:'
+              f'{list(LOG_ENGINES.keys())}')
