@@ -25,7 +25,7 @@ def measure_time(func: Callable) -> Any:
         run_time = end_time - start_time
         msg = f'The function {func.__name__} completed in {run_time:.4f} ' +\
             f'secs.'
-        gcl_log_event(logger_name=config.LOGGER_NAME,
+        gcl_log_event(logger_name=config.LOGGER_NAME, # TODO: change to log_event
                       event_name='Time Measurement',
                       message=msg,
                       functionName=func.__name__,
