@@ -6,11 +6,11 @@ from configuration.config import config
 from infra.core.enums import Environments, LogSeverities
 from infra.core.gcp.gcl import gcl_log_event
 
-_logging_conf: Dict[str, Any] = config['logging']
+_logging_conf: Dict[str, Any] = config.get('logging', {})
 DEFAULT_LOGGER_NAME = _logging_conf.get('logger_name', 'infra')
 DEFAULT_LOGGING_ENGINE = _logging_conf.get('logging_engine', 'python').lower()
 LOG_TO_FILE = _logging_conf.get('log_to_file', False)
-LOG_FILE_NAME = _logging_conf.get('log_file_name', 'main.log')
+LOG_FILE_NAME = _logging_conf.get('log_file_name', '../main.log')
 LOG_FILE_BACKUPS = _logging_conf.get('backups', 3)
 fourty_mb = 40*1024**2
 LOG_FILE_SIZE = _logging_conf.get('max_bytes', fourty_mb)
