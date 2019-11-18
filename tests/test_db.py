@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import WriteError
 
-from infra.db import MongoHandler
+from infra.core.db import MongoHandler
 
 
 @pytest.fixture(scope='module')
@@ -26,8 +26,9 @@ def scheme_and_data():
 
 @pytest.fixture(scope='module')
 def secrets():
-    with open('secrets.json', 'rb') as jf:
-        secrets = json.load(jf)
+    with open('infra_config.json', 'rb') as jf:
+        config = json.load(jf)
+        secrets = config['secrets']
 
     return secrets
 
@@ -46,20 +47,20 @@ def temp_coll_name(evo_db: Database):
 def conn_string(secrets):
     user_name = secrets['db']['user_name']
     pwd = secrets['db']['password']
-    conn_string = f'mongodb+srv://{user_name}:{pwd}@evolve-omg0q.gcp.mongodb.'\
-        f'net/test?retryWrites=true&w=majority'
+    conn_string = f'mongodb+srv://{user_name}:{pwd}@development-hyto4.gcp.'\
+        f'mongodb.net/test?retryWrites=true&w=majority'
 
     return conn_string
 
 
 @pytest.fixture(scope='module')
 def db_name():
-    return 'evo-dev'
+    return 'infra-dev'
 
 
 @pytest.fixture(scope='module')
 def app_name():
-    return 'Evo-Test'
+    return 'Infra-Test'
 
 
 @pytest.fixture(scope='module')
@@ -79,7 +80,7 @@ def evo_db(conn_string, db_name, app_name):
 
 
 def test_create_collection(mongo_handler: MongoHandler, evo_db: Database):
-    new_col_name = 'new_evo_col'
+    new_col_name = 'new_infra_col'
     result = mongo_handler.create_collection(new_col_name)
     assert result
     assert evo_db[new_col_name] is not None
