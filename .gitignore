@@ -7,8 +7,8 @@
 # python
 *.pyc
 **/__pycache__
-#cardentials
-secrets.json
+#config
+infra_config.json
 # package setup
 build/
 *.egg-info/
