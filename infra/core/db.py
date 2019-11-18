@@ -21,13 +21,11 @@ class MongoHandler():
 
     def __init__(self, conn_string: str,
                  db_name: str,
-                 logger_name: str,
                  app_name: str = None):
         self._client = MongoClient(conn_string, appname=app_name)
         self._db = self._client.get_database(db_name)
         self._curr_db_name = db_name
         self._app_name = app_name
-        self._logger_name = logger_name
 
     def __del__(self):
         self._client.close()
@@ -49,8 +47,7 @@ class MongoHandler():
             'eventGroup': 'Mongo'
         }
 
-        log_event(logger_name=self._logger_name,
-                  event_name='DB Changed',
+        log_event(event_name='DB Changed',
                   message='A user requested to change the db.',
                   **metadata)
 
@@ -71,8 +68,7 @@ class MongoHandler():
             'eventGroup': 'Mongo'
         }
 
-        log_event(logger_name=self._logger_name,
-                  event_name='Collection Changed',
+        log_event(event_name='Collection Changed',
                   message='A new collection was requested.',
                   severity=LogSeverities.DEBUG,
                   **metadata)
@@ -90,24 +86,23 @@ class MongoHandler():
         Returns:
            bool: True if the collection was created else False.
         """
+        metadata = {
+            'collName': col_name,
+            'className': 'MongoHandler',
+            'funcName': 'create_collection',
+            'eventGroup': 'Mongo'
+        }
+
         try:
             self._db.create_collection(col_name, **options)
-            metadata = {
-                'collName': col_name,
-                'className': 'MongoHandler',
-                'funcName': 'create_collection',
-                'eventGroup': 'Mongo'
-            }
 
-            log_event(logger_name=self._logger_name,
-                      event_name='Collection Created',
+            log_event(event_name='Collection Created',
                       message='A new collection was created.',
                       **metadata)
 
             return True
         except CollectionInvalid as cie:
-            log_event(logger_name=self._logger_name,
-                      event_name='Collection Error',
+            log_event(event_name='Collection Error',
                       message=str(cie),
                       severity=LogSeverities.ERROR,
                       **metadata)
@@ -129,26 +124,25 @@ class MongoHandler():
         Returns:
             bool: True if the collection was deleted else False.
         """
+        metadata = {
+            'collName': col_name,
+            'className': 'MongoHandler',
+            'funcName': 'create_collection',
+            'eventGroup': 'Mongo'
+        }
+
         try:
             result = self._db.drop_collection(col_name)
-            metadata = {
-                'collName': col_name,
-                'className': 'MongoHandler',
-                'funcName': 'create_collection',
-                'eventGroup': 'Mongo'
-            }
 
             if 'errmsg' in result:
-                log_event(logger_name=self._logger_name,
-                          event_name='Collection Error',
+                log_event(event_name='Collection Error',
                           message=result['errmsg'],
                           severity=LogSeverities.WARNING,
                           **metadata)
 
                 return False
 
-            log_event(logger_name=self._logger_name,
-                      event_name='Collection Deleted',
+            log_event(event_name='Collection Deleted',
                       message='Collection was deleted.',
                       **metadata)
 
@@ -180,32 +174,31 @@ class MongoHandler():
         Returns:
             bool: True for success, False otherwise.
         """
+        metadata = {
+            'collName': col_name,
+            'className': 'MongoHandler',
+            'funcName': 'create_collection',
+            'validator': schema,
+            'validationLevel': validation_level,
+            'validationAction': validation_action,
+            'eventGroup': 'Mongo'
+        }
+
         try:
             result = self._db.command('collMod', col_name,
                                       validator=schema,
                                       validationLevel=validation_level,
                                       validationAction=validation_action)
-            metadata = {
-                'collName': col_name,
-                'className': 'MongoHandler',
-                'funcName': 'create_collection',
-                'validator': schema,
-                'validationLevel': validation_level,
-                'validationAction': validation_action,
-                'eventGroup': 'Mongo'
-            }
 
             if 'errmsg' in result:
-                log_event(logger_name=self._logger_name,
-                          event_name='Collection Error',
+                log_event(event_name='Collection Error',
                           message=result['errmsg'],
                           severity=LogSeverities.WARNING,
                           **metadata)
 
                 return False
 
-            log_event(logger_name=self._logger_name,
-                      event_name='Collection Schema Updated',
+            log_event(event_name='Collection Schema Updated',
                       message='The new schema was applied.',
                       **metadata)
 
@@ -218,8 +211,7 @@ class MongoHandler():
             return False
         except OperationFailure as ope:
             msg = 'The operation has failed, the schema was not updated.'
-            log_event(logger_name=self._logger_name,
-                      event_name='Collection Error',
+            log_event(event_name='Collection Error',
                       message=msg,
                       description=str(ope),
                       severity=LogSeverities.ERROR,

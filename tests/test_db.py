@@ -64,8 +64,8 @@ def app_name():
 
 
 @pytest.fixture(scope='module')
-def mongo_handler(conn_string, db_name, app_name, logger_name):
-    handler = MongoHandler(conn_string, db_name, app_name, logger_name)
+def mongo_handler(conn_string, db_name, app_name):
+    handler = MongoHandler(conn_string, db_name, app_name)
     yield handler
     del handler
 
