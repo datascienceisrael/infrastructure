@@ -15,6 +15,7 @@ pymongo = "*"
 google-cloud-logging = "*"
 aenum = "*"
 google-cloud-storage = "*"
+dnspython = "*"
 
 [requires]
 python_version = "3.6"
