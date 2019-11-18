@@ -9,6 +9,7 @@ autopep8 = "*"
 flake8 = "*"
 jupyter = "*"
 pytest = "*"
+pip-chill = "*"
 
 [packages]
 pymongo = "*"
