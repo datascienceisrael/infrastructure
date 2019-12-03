@@ -19,6 +19,8 @@ google-cloud-logging = "*"
 aenum = "*"
 google-cloud-storage = "*"
 dnspython = "*"
+numpy = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.6"
