@@ -2,6 +2,9 @@ import functools
 from time import time
 from typing import Any, Callable
 
+import pandas as pd
+
+from infra.core.dataframe import get_statistics_df, save_dataframes
 from infra.core.logging import log_event
 
 
@@ -31,3 +34,36 @@ def measure_time(func: Callable) -> Any:
 
         return rv
     return wrapper
+
+
+def visualization(base_path):
+    """
+    Saving function input and output, and their statistics in csv files into a
+    specific path, in order to allow further visulaisation of the data fllow.
+
+    Args:
+        base_path (Callable): Base path to save csv files.
+
+    Returns:
+        [Any]: the return value of the decorated function.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            df_output = None
+            for arg in args:
+                if isinstance(arg, pd.DataFrame):
+                    df_input = arg.copy()
+                    df_output = f(*args, **kwargs)
+                    stats_df_input = get_statistics_df(df_input)
+                    stats_df_output = get_statistics_df(df_output)
+                    df_names = ['input', 'output',
+                                'stats_input', 'stats_output']
+                    save_dataframes(df_names, [
+                                    df_input, df_output, stats_df_input,
+                                    stats_df_output], base_path, f.__name__)
+                    break
+
+            return df_output
+        return wrapper
+    return decorator
