@@ -26,7 +26,7 @@ def calc_statistics(series: pd.Series, round_factor: int = 2, n_bins: int = 50,
     if (np.issubdtype(series.dtype, np.number)) and \
        (np.count_nonzero(np.array(series)) == len(series)):
 
-        stats.update({"variable_name": series.name()})
+        stats.update({"variable_name": series.name})
         stats.update({"mean": series.mean().round(round_factor)})
         stats.update({"mean": series.mean().round(round_factor)})
         stats.update({"std": series.std().round(round_factor)})
