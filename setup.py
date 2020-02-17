@@ -5,8 +5,8 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(
-    name="dsg-infra",
-    version="0.0.0.9001",
+    name="infra",
+    version="0.0.0.9000",
     author="Data Science Group",
     author_email="or@datascience.co.il, shaul@datascience.co.il, pavels@datascience.co.il",
     description="DSG common infrastructure libraries",
